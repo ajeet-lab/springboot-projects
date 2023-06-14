@@ -60,6 +60,7 @@ public class PostServiceImpl implements PostService {
 
         post.setPostName(postDto.getPostName());
         post.setPostContent(postDto.getPostContent());
+        post.setPostImage(postDto.getPostImage());
 
         Post updatedPost = postRepo.save(post);
 
@@ -135,4 +136,7 @@ public class PostServiceImpl implements PostService {
         return postDtos;
     }
     
+
+    
+
 }

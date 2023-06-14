@@ -1,10 +1,15 @@
 package com.ajeet.blog.ajeetblog.controllers;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,12 +19,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.ajeet.blog.ajeetblog.config.AppContants;
 import com.ajeet.blog.ajeetblog.payloads.ApiResponse;
 import com.ajeet.blog.ajeetblog.payloads.PostDto;
 import com.ajeet.blog.ajeetblog.payloads.PostResponse;
+import com.ajeet.blog.ajeetblog.services.FileService;
 import com.ajeet.blog.ajeetblog.services.PostService;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/api")
@@ -28,6 +37,13 @@ public class PostController {
 
     @Autowired
     private PostService postService;
+
+
+    @Autowired
+    private FileService fileService;
+
+    @Value("${project.image}")
+    private String path;
 
     @PostMapping("/user/{userId}/category/{categoryId}/posts")
     public ResponseEntity<PostDto> createPost(@RequestBody PostDto postDto, @PathVariable Integer userId, @PathVariable Integer categoryId){
@@ -94,4 +110,22 @@ public class PostController {
       return new ResponseEntity<List<PostDto>>(postDtos, HttpStatus.OK);
     }
     
+    @PostMapping("/post/image/upload/{postId}")
+    public ResponseEntity<PostDto> uploadImage(@RequestParam("image") MultipartFile image, @PathVariable Integer postId) throws IOException{
+        PostDto postDto = this.postService.getPostById(postId);
+        System.out.println("PostDetails ====> " + postDto);
+        String fileName = this.fileService.uploadFile(image, path);
+        System.out.println("ImageDetails ====> " + postDto);
+        postDto.setPostImage(fileName);
+       PostDto updatedPostDto = this.postService.updatePostById(postId, postDto);
+      return new ResponseEntity<PostDto>(updatedPostDto, HttpStatus.OK);
+    }
+
+    @GetMapping("/post/image/{imageName}")
+    public void getImage(@PathVariable String imageName, HttpServletResponse response) throws IOException{
+      InputStream fileName = this.fileService.getImagInputStream(imageName, path);
+      response.setContentType(MediaType.ALL_VALUE);
+      StreamUtils.copy(fileName, response.getOutputStream());
+    }
+
 }
